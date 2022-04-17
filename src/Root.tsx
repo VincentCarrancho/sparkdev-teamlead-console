@@ -12,7 +12,7 @@ import {
   TextStylesParams,
   InputStylesParams,
   TitleStylesParams,
-  MultiSelect,
+  InputWrapper,
 } from "@mantine/core";
 
 import { Mail, Lock } from "tabler-icons-react";
@@ -22,12 +22,15 @@ import "./global.css";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  User,
+  signOut,
 } from "firebase/auth";
 import { auth } from "./firebase";
+import { useSetState } from "@mantine/hooks";
 
 function Root() {
   const [hasAccout, setHasAccout] = useState(true); // if the user has existing(true) , show the sign in forms
-  const [signInPopup, setSignInPopup] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const register = async (email: string, password: string) => {
     try {
@@ -42,23 +45,21 @@ function Root() {
   const signIn = async (email: string, password: string) => {
     try {
       const user = await signInWithEmailAndPassword(auth, email, password);
+      console.log(user.user.email);
+      // based on the user, we need to fetch the data, determining if they are an admin or a team lead.
+      setErrorMessage("");
     } catch (error) {
-      console.log(error);
+      // @ts-ignore
+      console.log(error.message);
+      // @ts-ignore
+      var errorCode = error.code;
+
+      errorCode = errorCode.replace("auth/", "");
+
+      setErrorMessage(errorCode);
       // what ever the error is just pass it as a UI element
     }
   };
-
-  // TODO: figure out when to use this.
-  const currentTeams = [
-    { value: "AI", label: "Artificial Intelligence" },
-    { value: "DIG", label: "Dream in Green" },
-    { value: "GameDev", label: "Game Development" },
-    { value: "ICAVE", label: "ICAVE" },
-    { value: "IT", label: "Information Technology" },
-    { value: "Robotics", label: "Robotics" },
-    { value: "VR", label: "Virtual Reality" },
-    { value: "WebDev", label: "Web Development" },
-  ];
 
   // * We should make an API request from a server in order to do this
 
@@ -126,6 +127,7 @@ function Root() {
         }),
       }}
       theme={{
+        colorScheme: "dark",
         /**
          * * BootStrap Breakpoints
           xs	<576px
@@ -150,7 +152,7 @@ function Root() {
         },
       }}
     >
-      <body>
+      <>
         <div className="App">
           <Grid grow>
             <Grid.Col xs={1}>{signInPageTitles}</Grid.Col>
@@ -163,30 +165,44 @@ function Root() {
                     <form
                       onSubmit={signInForm.onSubmit((values) => {
                         console.log(values.email);
-                        // implement on click handlers.
+                        try {
+                          signIn(values.email, values.password);
+                        } catch (error) {
+                          console.log(error);
+                        }
                       })}
                     >
-                      <TextInput
-                        required
-                        placeholder={"jdoe123@fiu.edu"}
-                        {...signInForm.getInputProps("email")}
-                        mt="md"
-                        icon={<Mail />}
-                      />
-
-                      <PasswordInput
-                        required
-                        {...signInForm.getInputProps("password")}
-                        mt="md"
-                        placeholder="Password"
-                        icon={<Lock />}
-                      />
-
+                      <InputWrapper
+                        error={
+                          "Error: " +
+                          errorMessage
+                            .replaceAll("-", " ")
+                            .split(" ")
+                            .map(
+                              (s) => s.charAt(0).toUpperCase() + s.substring(1)
+                            )
+                            .join(" ")
+                        }
+                      >
+                        <TextInput
+                          required
+                          placeholder={"jdoe123@fiu.edu"}
+                          {...signInForm.getInputProps("email")}
+                          mt="md"
+                          icon={<Mail />}
+                        />
+                        <PasswordInput
+                          required
+                          {...signInForm.getInputProps("password")}
+                          mt="md"
+                          placeholder="Password"
+                          icon={<Lock />}
+                        />
+                      </InputWrapper>
                       <Button type="submit" color="orange" mt="md">
                         Log In
                       </Button>
                     </form>
-
                     <Button
                       onClick={() => {
                         setHasAccout(!hasAccout);
@@ -209,12 +225,18 @@ function Root() {
                   <form
                     onSubmit={registerForm.onSubmit((values) => {
                       console.log(values);
-                      register(values.email, values.password);
-                      values.email =
-                        values.password =
-                        values.confirmPassword =
-                          "";
-                      setHasAccout(!hasAccout);
+                      try {
+                        register(values.email, values.password);
+                        // resets the fields
+                        values.email =
+                          values.password =
+                          values.confirmPassword =
+                            "";
+
+                        setHasAccout(!hasAccout);
+                      } catch (error) {
+                        console.log(error);
+                      }
                     })}
                   >
                     <TextInput
@@ -254,7 +276,7 @@ function Root() {
             </Grid.Col>
           </Grid>
         </div>
-      </body>
+      </>
     </MantineProvider>
   );
 }
