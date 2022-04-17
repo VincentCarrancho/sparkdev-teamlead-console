@@ -36,9 +36,18 @@ function Root() {
     try {
       const user = await createUserWithEmailAndPassword(auth, email, password);
       console.log(user);
+      setHasAccout(!hasAccout); // So that it redirects user to signin page after success
     } catch (error) {
       console.log(error);
       // what ever the error is just pass it as a UI element
+      // @ts-ignore
+      console.log(error.message);
+      // @ts-ignore
+      var errorCode = error.code;
+
+      errorCode = errorCode.replace("auth/", "");
+
+      setErrorMessage("Error: " + errorCode);
     }
   };
 
@@ -56,7 +65,7 @@ function Root() {
 
       errorCode = errorCode.replace("auth/", "");
 
-      setErrorMessage(errorCode);
+      setErrorMessage("Error: " + errorCode);
       // what ever the error is just pass it as a UI element
     }
   };
@@ -173,16 +182,13 @@ function Root() {
                       })}
                     >
                       <InputWrapper
-                        error={
-                          "Error: " +
-                          errorMessage
-                            .replaceAll("-", " ")
-                            .split(" ")
-                            .map(
-                              (s) => s.charAt(0).toUpperCase() + s.substring(1)
-                            )
-                            .join(" ")
-                        }
+                        error={errorMessage
+                          .replaceAll("-", " ")
+                          .split(" ")
+                          .map(
+                            (s) => s.charAt(0).toUpperCase() + s.substring(1)
+                          )
+                          .join(" ")}
                       >
                         <TextInput
                           required
@@ -228,35 +234,38 @@ function Root() {
                       try {
                         register(values.email, values.password);
                         // resets the fields
-                        values.email =
-                          values.password =
-                          values.confirmPassword =
-                            "";
-
-                        setHasAccout(!hasAccout);
+                        values.email = "";
                       } catch (error) {
                         console.log(error);
                       }
                     })}
                   >
-                    <TextInput
-                      required
-                      placeholder="jdoe123@fiu.edu"
-                      {...registerForm.getInputProps("email")}
-                      mt="md"
-                    />
-                    <PasswordInput
-                      required
-                      placeholder="Password"
-                      {...registerForm.getInputProps("password")}
-                      mt="md"
-                    />
-                    <PasswordInput
-                      required
-                      placeholder="Confirm Password"
-                      {...registerForm.getInputProps("confirmPassword")}
-                      mt="md"
-                    />
+                    <InputWrapper
+                      error={errorMessage
+                        .replaceAll("-", " ")
+                        .split(" ")
+                        .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+                        .join(" ")}
+                    >
+                      <TextInput
+                        required
+                        placeholder="jdoe123@fiu.edu"
+                        {...registerForm.getInputProps("email")}
+                        mt="md"
+                      />
+                      <PasswordInput
+                        required
+                        placeholder="Password"
+                        {...registerForm.getInputProps("password")}
+                        mt="md"
+                      />
+                      <PasswordInput
+                        required
+                        placeholder="Confirm Password"
+                        {...registerForm.getInputProps("confirmPassword")}
+                        mt="md"
+                      />
+                    </InputWrapper>
                     <Button color="orange" type="submit" mt="md">
                       Register
                     </Button>
@@ -265,6 +274,7 @@ function Root() {
                     variant="outline"
                     color="orange"
                     onClick={() => {
+                      setErrorMessage("");
                       setHasAccout(!hasAccout);
                     }}
                     mt="md"
